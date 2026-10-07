@@ -1,0 +1,26 @@
+{
+  "name": "expense-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm run start:dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:server": "npm run start:dev --prefix server",
+    "dev:client": "npm run dev --prefix client"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nithiyapraba2-cloud/expense-tracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/nithiyapraba2-cloud/expense-tracker/issues"
+  },
+  "homepage": "https://github.com/nithiyapraba2-cloud/expense-tracker#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
