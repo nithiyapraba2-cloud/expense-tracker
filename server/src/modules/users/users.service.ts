@@ -16,19 +16,22 @@ type User = {
   updatedAt: Date;
 };
 
+export type PublicUser = Omit<User, 'password'>;
+
 @Injectable()
 export class UsersService {
   private users: User[] = [];
   private nextId = 1;
 
-  async create(createUserDto: CreateUserDto) {
-    this.ensureEmailIsFree(createUserDto.email);
+  async create(createUserDto: CreateUserDto): Promise<PublicUser> {
+    const email = createUserDto.email.toLowerCase();
+    this.ensureEmailIsFree(email);
 
     const now = new Date();
     const newUser: User = {
       id: this.nextId++,
       name: createUserDto.name,
-      email: createUserDto.email.toLowerCase(),
+      email,
       password: await bcrypt.hash(createUserDto.password, 10),
       createdAt: now,
       updatedAt: now,
@@ -38,15 +41,24 @@ export class UsersService {
     return this.withoutPassword(newUser);
   }
 
-  findAll() {
+  findAll(): PublicUser[] {
     return this.users.map((u) => this.withoutPassword(u));
   }
 
-  findOne(id: number) {
+  findOne(id: number): PublicUser {
     return this.withoutPassword(this.getUserOrFail(id));
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
+  /**
+   * Returns the full user INCLUDING the password hash.
+   * Use only inside the app (e.g. AuthService for bcrypt.compare).
+   * Never return this directly from a controller.
+   */
+  findByEmailWithPassword(email: string): User | undefined {
+    return this.users.find((u) => u.email === email.toLowerCase());
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<PublicUser> {
     const user = this.getUserOrFail(id);
 
     if (updateUserDto.email) {
@@ -67,7 +79,7 @@ export class UsersService {
     return this.withoutPassword(user);
   }
 
-  remove(id: number) {
+  remove(id: number): { message: string } {
     this.getUserOrFail(id);
     this.users = this.users.filter((u) => u.id !== id);
     return { message: `User #${id} deleted` };
@@ -81,13 +93,13 @@ export class UsersService {
     return user;
   }
 
-  private ensureEmailIsFree(email: string) {
-    const taken = this.users.some((u) => u.email === email.toLowerCase());
+  private ensureEmailIsFree(email: string): void {
+    const taken = this.users.some((u) => u.email === email);
     if (taken) throw new ConflictException('Email is already registered');
   }
 
-  private withoutPassword(user: User) {
-    const { password, ...rest } = user;
+  private withoutPassword(user: User): PublicUser {
+    const { password: _password, ...rest } = user;
     return rest;
   }
 }
