@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
@@ -17,15 +17,17 @@ export class UsersService {
     private readonly usersRepo: Repository<User>,
   ) {}
 
-  async create(dto: CreateUserDto) {
-    const exists = await this.usersRepo.findOneBy({ email: dto.email });
+  // Pass a manager to run inside a caller's transaction
+  async create(dto: CreateUserDto, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(User) : this.usersRepo;
+
+    const exists = await repo.findOneBy({ email: dto.email });
     if (exists) throw new ConflictException('Email already registered');
 
     const password = await bcrypt.hash(dto.password, 10);
-    const saved = await this.usersRepo.save(
-      this.usersRepo.create({ ...dto, password }),
-    );
-    return this.findOne(saved.id); // re-read so password is not returned
+    const saved = await repo.save(repo.create({ ...dto, password }));
+    // re-read so password is not returned
+    return repo.findOneByOrFail({ id: saved.id });
   }
 
   findAll() {
