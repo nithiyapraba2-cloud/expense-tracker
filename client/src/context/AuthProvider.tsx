@@ -1,10 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AuthContext } from "./auth-context";
 import * as authApi from "../api/auth";
 import { TOKEN_KEY } from "../api/client";
 import type { User } from "../types/auth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   // Only "loading" if there's a saved token to check
   const [loading, setLoading] = useState(
@@ -22,6 +24,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function saveTokenAndLoadUser(accessToken: string) {
+    // Drop any cached data from a previous user before switching accounts
+    queryClient.clear();
     localStorage.setItem(TOKEN_KEY, accessToken);
     setUser(await authApi.getMe());
   }
@@ -38,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function logout() {
     localStorage.removeItem(TOKEN_KEY);
+    // Remove the logged-out user's cached data so the next user can't see it
+    queryClient.clear();
     setUser(null);
   }
 
