@@ -32,7 +32,7 @@ export class AuthService {
   }
 
   private async buildResponse(user: {
-    id: number;
+    id: string;
     name: string;
     email: string;
   }) {

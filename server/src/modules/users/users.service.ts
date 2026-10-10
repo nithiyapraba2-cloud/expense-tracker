@@ -3,103 +3,64 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 
-type User = {
-  id: number;
-  name: string;
-  email: string;
-  password: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type PublicUser = Omit<User, 'password'>;
-
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
-  private nextId = 1;
+  constructor(
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
+  ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<PublicUser> {
-    const email = createUserDto.email.toLowerCase();
-    this.ensureEmailIsFree(email);
+  async create(dto: CreateUserDto) {
+    const exists = await this.usersRepo.findOneBy({ email: dto.email });
+    if (exists) throw new ConflictException('Email already registered');
 
-    const now = new Date();
-    const newUser: User = {
-      id: this.nextId++,
-      name: createUserDto.name,
-      email,
-      password: await bcrypt.hash(createUserDto.password, 10),
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.users.push(newUser);
-    return this.withoutPassword(newUser);
+    const password = await bcrypt.hash(dto.password, 10);
+    const saved = await this.usersRepo.save(
+      this.usersRepo.create({ ...dto, password }),
+    );
+    return this.findOne(saved.id); // re-read so password is not returned
   }
 
-  findAll(): PublicUser[] {
-    return this.users.map((u) => this.withoutPassword(u));
+  findAll() {
+    return this.usersRepo.find();
   }
 
-  findOne(id: number): PublicUser {
-    return this.withoutPassword(this.getUserOrFail(id));
-  }
-
-  /**
-   * Returns the full user INCLUDING the password hash.
-   * Use only inside the app (e.g. AuthService for bcrypt.compare).
-   * Never return this directly from a controller.
-   */
-  findByEmailWithPassword(email: string): User | undefined {
-    return this.users.find((u) => u.email === email.toLowerCase());
-  }
-
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<PublicUser> {
-    const user = this.getUserOrFail(id);
-
-    if (updateUserDto.email) {
-      const email = updateUserDto.email.toLowerCase();
-      if (email !== user.email) this.ensureEmailIsFree(email);
-      user.email = email;
-    }
-
-    if (updateUserDto.name) {
-      user.name = updateUserDto.name;
-    }
-
-    if (updateUserDto.password) {
-      user.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
-
-    user.updatedAt = new Date();
-    return this.withoutPassword(user);
-  }
-
-  remove(id: number): { message: string } {
-    this.getUserOrFail(id);
-    this.users = this.users.filter((u) => u.id !== id);
-    return { message: `User #${id} deleted` };
-  }
-
-  // ---------- helpers ----------
-
-  private getUserOrFail(id: number): User {
-    const user = this.users.find((u) => u.id === id);
-    if (!user) throw new NotFoundException(`User #${id} not found`);
+  async findOne(id: string) {
+    const user = await this.usersRepo.findOneBy({ id });
+    if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
-  private ensureEmailIsFree(email: string): void {
-    const taken = this.users.some((u) => u.email === email);
-    if (taken) throw new ConflictException('Email is already registered');
+  findByEmail(email: string) {
+    return this.usersRepo.findOneBy({ email });
   }
 
-  private withoutPassword(user: User): PublicUser {
-    const { password: _password, ...rest } = user;
-    return rest;
+  // password has select: false, so we ask for it explicitly (login only)
+  findByEmailWithPassword(email: string) {
+    return this.usersRepo
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email = :email', { email })
+      .getOne();
+  }
+
+  async update(id: string, dto: UpdateUserDto) {
+    await this.findOne(id);
+    if (dto.password) dto.password = await bcrypt.hash(dto.password, 10);
+    await this.usersRepo.update(id, dto);
+    return this.findOne(id);
+  }
+
+  async remove(id: string) {
+    const user = await this.findOne(id);
+    await this.usersRepo.remove(user);
+    return { deleted: true };
   }
 }
