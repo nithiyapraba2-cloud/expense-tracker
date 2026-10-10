@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseArrayPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -38,6 +39,15 @@ export class CategoriesController {
   @Post()
   create(@Body() dto: CreateCategoryDto, @CurrentUserId() userId: string) {
     return this.categoriesService.create(dto, userId);
+  }
+
+  @Post('bulk')
+  createMany(
+    @Body(new ParseArrayPipe({ items: CreateCategoryDto }))
+    dtos: CreateCategoryDto[],
+    @CurrentUserId() userId: string,
+  ) {
+    return this.categoriesService.createMany(dtos, userId);
   }
 
   @Patch(':id')

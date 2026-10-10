@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, QueryFailedError, Repository } from 'typeorm';
 import { Category, CategoryType } from './entities/category.entity.js';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
 import { UpdateCategoryDto } from './dto/update-category.dto.js';
@@ -71,6 +71,35 @@ export class CategoriesService {
     );
   }
 
+  // Create several categories at once; existing ones are skipped, not errors
+  async createMany(dtos: CreateCategoryDto[], userId: string) {
+    const existing = await this.categoriesRepo.find({
+      where: { userId, name: In(dtos.map((d) => d.name)) },
+    });
+    const taken = new Set(existing.map((c) => `${c.name}|${c.type}`));
+
+    const toCreate: CreateCategoryDto[] = [];
+    const skipped: string[] = [];
+
+    for (const dto of dtos) {
+      const key = `${dto.name}|${dto.type}`;
+      if (taken.has(key)) {
+        skipped.push(dto.name);
+        continue;
+      }
+      taken.add(key); // also catches duplicates inside the same request
+      toCreate.push(dto);
+    }
+
+    const created = toCreate.length
+      ? await this.categoriesRepo.save(
+          toCreate.map((dto) => this.categoriesRepo.create({ ...dto, userId })),
+        )
+      : [];
+
+    return { created, skipped };
+  }
+
   async update(id: string, dto: UpdateCategoryDto, userId: string) {
     const category = await this.findOne(id, userId);
     Object.assign(category, dto);
@@ -79,7 +108,20 @@ export class CategoriesService {
 
   async remove(id: string, userId: string) {
     const category = await this.findOne(id, userId);
-    await this.categoriesRepo.remove(category);
+    try {
+      await this.categoriesRepo.remove(category);
+    } catch (err) {
+      // 23503 = PostgreSQL foreign key violation
+      if (
+        err instanceof QueryFailedError &&
+        err.driverError?.code === '23503'
+      ) {
+        throw new ConflictException(
+          'Category has transactions. Delete or move them first.',
+        );
+      }
+      throw err;
+    }
     return { deleted: true };
   }
 }
