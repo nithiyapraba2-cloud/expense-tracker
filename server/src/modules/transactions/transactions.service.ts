@@ -145,4 +145,45 @@ export class TransactionsService {
       ),
     };
   }
+  // Income and expense per month, for the last N months (including this one)
+  async trend(userId: string, months: number) {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+    const from = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-01`;
+
+    const rows = await this.transactionsRepo
+      .createQueryBuilder('t')
+      .select(`TO_CHAR(t.date, 'YYYY-MM')`, 'month')
+      .addSelect('t.type', 'type')
+      .addSelect('SUM(t.amount)', 'total')
+      .where('t.userId = :userId', { userId })
+      .andWhere('t.date >= :from', { from })
+      .groupBy(`TO_CHAR(t.date, 'YYYY-MM')`)
+      .addGroupBy('t.type')
+      .getRawMany<{ month: string; type: CategoryType; total: string }>();
+
+    // Build every month, filling 0 for months with no data
+    const result: {
+      month: string;
+      income: number;
+      expense: number;
+      savings: number;
+    }[] = [];
+
+    for (let i = 0; i < months; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+      const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+      const totalFor = (type: CategoryType) =>
+        Number(
+          rows.find((r) => r.month === key && r.type === type)?.total ?? 0,
+        );
+
+      const income = totalFor(CategoryType.INCOME);
+      const expense = totalFor(CategoryType.EXPENSE);
+      result.push({ month: key, income, expense, savings: income - expense });
+    }
+
+    return result;
+  }
 }
