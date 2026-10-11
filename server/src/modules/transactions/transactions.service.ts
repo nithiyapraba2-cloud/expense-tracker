@@ -95,6 +95,24 @@ export class TransactionsService {
     return { deleted: true };
   }
 
+  // All-time income, expense and balance
+  async totals(userId: string) {
+    const rows = await this.transactionsRepo
+      .createQueryBuilder('t')
+      .select('t.type', 'type')
+      .addSelect('SUM(t.amount)', 'total')
+      .where('t.userId = :userId', { userId })
+      .groupBy('t.type')
+      .getRawMany<{ type: CategoryType; total: string }>();
+
+    const totalFor = (type: CategoryType) =>
+      Number(rows.find((r) => r.type === type)?.total ?? 0);
+    const totalIncome = totalFor(CategoryType.INCOME);
+    const totalExpense = totalFor(CategoryType.EXPENSE);
+
+    return { totalIncome, totalExpense, balance: totalIncome - totalExpense };
+  }
+
   // Dashboard totals for one month, e.g. month = '2026-10'
   async summary(userId: string, month: string) {
     const [year, mon] = month.split('-').map(Number);

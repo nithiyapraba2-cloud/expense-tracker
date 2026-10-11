@@ -63,7 +63,7 @@ export default function RegisterPage() {
           Password
           <input
             type="password"
-            minLength={6}
+            minLength={8}
             value={form.password}
             onChange={(e) => update("password", e.target.value)}
             required

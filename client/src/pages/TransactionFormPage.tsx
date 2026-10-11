@@ -61,6 +61,7 @@ function TransactionForm({ initial }: { initial?: Transaction }) {
       queryClient.invalidateQueries({ queryKey: ["summary"] });
       queryClient.invalidateQueries({ queryKey: ["transaction"] });
       queryClient.invalidateQueries({ queryKey: ["trend"] });
+      queryClient.invalidateQueries({ queryKey: ["totals"] });
       navigate("/transactions");
     },
     onError: (err) => setError(getErrorMessage(err)),

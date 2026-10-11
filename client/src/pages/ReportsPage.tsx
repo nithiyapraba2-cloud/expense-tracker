@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
-  BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Legend,
+  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -141,7 +142,7 @@ export default function ReportsPage() {
         {trend.data && (
           <div className="chart">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trend.data}>
+              <ComposedChart data={trend.data}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" tickFormatter={formatMonthShort} />
                 <YAxis
@@ -165,7 +166,14 @@ export default function ReportsPage() {
                   fill="#dc2626"
                   radius={[4, 4, 0, 0]}
                 />
-              </BarChart>
+                <Line
+                  dataKey="savings"
+                  name="Savings"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         )}

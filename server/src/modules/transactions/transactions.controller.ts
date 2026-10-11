@@ -35,6 +35,11 @@ export class TransactionsController {
     return this.transactionsService.trend(userId, query.months);
   }
 
+  @Get('totals')
+  totals(@CurrentUserId() userId: string) {
+    return this.transactionsService.totals(userId);
+  }
+
   @Get()
   findAll(
     @CurrentUserId() userId: string,

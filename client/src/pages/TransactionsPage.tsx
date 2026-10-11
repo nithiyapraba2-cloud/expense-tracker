@@ -42,9 +42,12 @@ export default function TransactionsPage() {
   const deleteMutation = useMutation({
     mutationFn: deleteTransaction,
     onSuccess: () => {
+      // Deleted the last item on this page: go back so we don't land on an empty page
+      if (data?.data.length === 1 && page > 1) setPage((p) => p - 1);
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["summary"] });
       queryClient.invalidateQueries({ queryKey: ["trend"] });
+      queryClient.invalidateQueries({ queryKey: ["totals"] });
     },
   });
 

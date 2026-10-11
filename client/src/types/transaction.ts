@@ -62,6 +62,12 @@ export interface MonthSummary {
   incomeByCategory: CategoryTotal[];
 }
 
+export interface Totals {
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+}
+
 export interface TrendPoint {
   month: string;
   income: number;

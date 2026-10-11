@@ -6,7 +6,7 @@ import type {
   TransactionFilters,
   TransactionInput,
 } from "../types/transaction";
-import type { TrendPoint } from "../types/transaction";
+import type { Totals, TrendPoint } from "../types/transaction";
 
 export async function getTransactions(filters: TransactionFilters) {
   const { data } = await api.get<Paginated<Transaction>>("/transactions", {
@@ -41,6 +41,11 @@ export async function getSummary(month: string) {
   const { data } = await api.get<MonthSummary>("/transactions/summary", {
     params: { month },
   });
+  return data;
+}
+
+export async function getTotals() {
+  const { data } = await api.get<Totals>("/transactions/totals");
   return data;
 }
 

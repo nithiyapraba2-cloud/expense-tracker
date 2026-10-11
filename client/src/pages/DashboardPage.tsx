@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getSummary, getTransactions } from "../api/transactions";
+import { getSummary, getTotals, getTransactions } from "../api/transactions";
 import { getErrorMessage } from "../api/client";
 import TransactionItem from "../components/TransactionItem";
 import {
@@ -20,6 +20,8 @@ export default function DashboardPage() {
     queryFn: () => getSummary(month),
   });
 
+  const totals = useQuery({ queryKey: ["totals"], queryFn: getTotals });
+
   const recentFilters = { from, to, limit: 5 };
   const recent = useQuery({
     queryKey: ["transactions", recentFilters],
@@ -28,6 +30,19 @@ export default function DashboardPage() {
 
   return (
     <div className="page">
+      {totals.data && (
+        <div className="card overall">
+          <small className="muted">Overall balance (all time)</small>
+          <strong className={totals.data.balance < 0 ? "danger" : ""}>
+            {formatINR(totals.data.balance)}
+          </strong>
+          <span className="muted">
+            Income {formatINR(totals.data.totalIncome)} · Expense{" "}
+            {formatINR(totals.data.totalExpense)}
+          </span>
+        </div>
+      )}
+
       <div className="page-header">
         <h1>{formatMonth(month)}</h1>
         <input

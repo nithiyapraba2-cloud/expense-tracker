@@ -8,6 +8,7 @@ import { EntityManager, In, QueryFailedError, Repository } from 'typeorm';
 import { Category, CategoryType } from './entities/category.entity.js';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
 import { UpdateCategoryDto } from './dto/update-category.dto.js';
+import { Transaction } from '../transactions/entities/transaction.entity.js';
 
 const DEFAULT_CATEGORIES = [
   { name: 'Petrol', icon: '⛽', type: CategoryType.EXPENSE },
@@ -102,8 +103,32 @@ export class CategoriesService {
 
   async update(id: string, dto: UpdateCategoryDto, userId: string) {
     const category = await this.findOne(id, userId);
+
+    // Changing the type would leave existing transactions with the wrong type
+    if (dto.type && dto.type !== category.type) {
+      const used = await this.categoriesRepo.manager.exists(Transaction, {
+        where: { categoryId: id },
+      });
+      if (used) {
+        throw new ConflictException(
+          'Category has transactions, so its type cannot be changed.',
+        );
+      }
+    }
+
     Object.assign(category, dto);
-    return this.categoriesRepo.save(category);
+    try {
+      return await this.categoriesRepo.save(category);
+    } catch (err) {
+      // 23505 = PostgreSQL unique violation (same name + type already exists)
+      if (
+        err instanceof QueryFailedError &&
+        err.driverError?.code === '23505'
+      ) {
+        throw new ConflictException('Category already exists');
+      }
+      throw err;
+    }
   }
 
   async remove(id: string, userId: string) {

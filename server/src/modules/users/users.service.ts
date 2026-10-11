@@ -55,6 +55,12 @@ export class UsersService {
 
   async update(id: string, dto: UpdateUserDto) {
     await this.findOne(id);
+    if (dto.email) {
+      const taken = await this.usersRepo.findOneBy({ email: dto.email });
+      if (taken && taken.id !== id) {
+        throw new ConflictException('Email already registered');
+      }
+    }
     if (dto.password) dto.password = await bcrypt.hash(dto.password, 10);
     await this.usersRepo.update(id, dto);
     return this.findOne(id);
