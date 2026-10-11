@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth-context";
 import { getErrorMessage } from "../api/client";
+import Brand from "../components/Brand";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -39,12 +40,19 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-page">
-      <form className="card" onSubmit={handleSubmit}>
-        <h1>Create account</h1>
+      <form className="auth-card" onSubmit={handleSubmit}>
+        <div className="auth-head">
+          <Brand size="lg" />
+          <h1>Create your account</h1>
+          <p className="muted">Start tracking income and expenses</p>
+        </div>
+
         {error && <p className="error">{error}</p>}
+
         <label>
           Name
           <input
+            autoComplete="name"
             value={form.name}
             onChange={(e) => update("name", e.target.value)}
             required
@@ -54,6 +62,8 @@ export default function RegisterPage() {
           Email
           <input
             type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
             value={form.email}
             onChange={(e) => update("email", e.target.value)}
             required
@@ -63,26 +73,29 @@ export default function RegisterPage() {
           Password
           <input
             type="password"
+            autoComplete="new-password"
             minLength={8}
             value={form.password}
             onChange={(e) => update("password", e.target.value)}
             required
           />
+          <small className="hint">At least 8 characters</small>
         </label>
         <label>
           Confirm password
           <input
             type="password"
+            autoComplete="new-password"
             value={form.confirm}
             onChange={(e) => update("confirm", e.target.value)}
             required
           />
         </label>
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Creating..." : "Register"}
+        <button type="submit" className="btn btn-primary" disabled={submitting}>
+          {submitting ? "Creating..." : "Create account"}
         </button>
-        <p>
-          Have an account? <Link to="/login">Login</Link>
+        <p className="auth-switch">
+          Already have an account? <Link to="/login">Log in</Link>
         </p>
       </form>
     </div>

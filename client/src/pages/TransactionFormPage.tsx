@@ -8,6 +8,7 @@ import {
 } from "../api/transactions";
 import { getCategories } from "../api/categories";
 import { getErrorMessage } from "../api/client";
+import { ChevronLeftIcon } from "../components/Icons";
 import type {
   PaymentMethod,
   Transaction,
@@ -15,6 +16,13 @@ import type {
   TransactionType,
 } from "../types/transaction";
 import { todayISO } from "../utils/format";
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: "cash", label: "Cash" },
+  { value: "upi", label: "UPI" },
+  { value: "card", label: "Card" },
+  { value: "bank", label: "Bank" },
+];
 
 export default function TransactionFormPage() {
   const { id } = useParams();
@@ -26,7 +34,14 @@ export default function TransactionFormPage() {
     enabled: isEdit, // only fetch when editing
   });
 
-  if (isEdit && existing.isPending) return <p>Loading...</p>;
+  if (isEdit && existing.isPending)
+    return (
+      <div className="page narrow">
+        <div className="card">
+          <div className="skeleton" />
+        </div>
+      </div>
+    );
   if (isEdit && existing.isError)
     return <p className="error">{getErrorMessage(existing.error)}</p>;
 
@@ -91,15 +106,18 @@ function TransactionForm({ initial }: { initial?: Transaction }) {
   }
 
   return (
-    <div className="page">
-      <h1>
-        {initial ? "Edit" : "Add"} {type === "expense" ? "Expense" : "Income"}
-      </h1>
+    <div className="page narrow">
+      <div className="page-header">
+        <div className="title-with-back">
+          <Link to="/transactions" className="icon-btn" aria-label="Back">
+            <ChevronLeftIcon />
+          </Link>
+          <h1>{initial ? "Edit transaction" : "New transaction"}</h1>
+        </div>
+      </div>
 
       <form className="card form" onSubmit={handleSubmit}>
-        {error && <p className="error">{error}</p>}
-
-        <div className="type-toggle">
+        <div className="segmented type-toggle" role="group" aria-label="Type">
           <button
             type="button"
             className={type === "expense" ? "active expense" : ""}
@@ -116,78 +134,105 @@ function TransactionForm({ initial }: { initial?: Transaction }) {
           </button>
         </div>
 
-        <label>
-          Amount (₹)
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.01"
-            min="0.01"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
+        <label className="amount-field">
+          <span>Amount</span>
+          <div className={`amount-input ${type}`}>
+            <span aria-hidden="true">₹</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0.01"
+              placeholder="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              autoFocus={!initial}
+              required
+            />
+          </div>
         </label>
 
-        <label>
-          Category
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            required
-          >
-            <option value="">
-              {categories.isPending ? "Loading..." : "Choose a category"}
-            </option>
+        <fieldset>
+          <legend>Category</legend>
+          {categories.isPending && <div className="skeleton short" />}
+          {categories.data?.length === 0 && (
+            <p className="muted">No {type} categories yet.</p>
+          )}
+          <div className="chips">
             {categories.data?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icon} {c.name}
-              </option>
+              <button
+                key={c.id}
+                type="button"
+                className={`chip ${categoryId === c.id ? `selected ${type}` : ""}`}
+                aria-pressed={categoryId === c.id}
+                onClick={() => setCategoryId(c.id)}
+              >
+                <span className="chip-icon">{c.icon ?? "•"}</span>
+                {c.name}
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+        </fieldset>
 
-        <label>
-          Date
-          <input
-            type="date"
-            value={date}
-            max={todayISO()}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-        </label>
+        <div className="form-row">
+          <label>
+            Date
+            <input
+              type="date"
+              value={date}
+              max={todayISO()}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </label>
 
-        <label>
-          Payment method
-          <select
-            value={paymentMethod}
-            onChange={(e) =>
-              setPaymentMethod(e.target.value as PaymentMethod | "")
-            }
-          >
-            <option value="">Not specified</option>
-            <option value="cash">Cash</option>
-            <option value="upi">UPI</option>
-            <option value="card">Card</option>
-            <option value="bank">Bank transfer</option>
-          </select>
-        </label>
+          <fieldset>
+            <legend>Paid by (optional)</legend>
+            <div className="chips">
+              {PAYMENT_METHODS.map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  className={`chip ${paymentMethod === m.value ? "selected" : ""}`}
+                  aria-pressed={paymentMethod === m.value}
+                  onClick={() =>
+                    setPaymentMethod(paymentMethod === m.value ? "" : m.value)
+                  }
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        </div>
 
         <label>
           Note (optional)
           <input
             value={note}
             maxLength={255}
+            placeholder="e.g. weekly vegetables"
             onChange={(e) => setNote(e.target.value)}
           />
         </label>
 
+        {error && <p className="error">{error}</p>}
+
         <div className="form-actions">
-          <button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Saving..." : "Save"}
+          <Link to="/transactions" className="btn btn-secondary">
+            Cancel
+          </Link>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending
+              ? "Saving..."
+              : initial
+                ? "Save changes"
+                : `Add ${type}`}
           </button>
-          <Link to="/transactions">Cancel</Link>
         </div>
       </form>
     </div>

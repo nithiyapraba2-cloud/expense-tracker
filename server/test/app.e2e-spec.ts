@@ -102,6 +102,8 @@ describe('Expense tracker API (e2e)', () => {
       await http().get('/auth/me').expect(401);
       const res = await http().get('/auth/me').set(auth(alice)).expect(200);
       expect(res.body.email).toBe(alice.email);
+      expect(res.body.name).toBe('alice');
+      expect(res.body.password).toBeUndefined();
     });
   });
 

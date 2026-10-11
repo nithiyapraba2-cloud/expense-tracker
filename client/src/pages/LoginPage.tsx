@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth-context";
 import { getErrorMessage } from "../api/client";
+import Brand from "../components/Brand";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -27,13 +28,21 @@ export default function LoginPage() {
 
   return (
     <div className="auth-page">
-      <form className="card" onSubmit={handleSubmit}>
-        <h1>Login</h1>
+      <form className="auth-card" onSubmit={handleSubmit}>
+        <div className="auth-head">
+          <Brand size="lg" />
+          <h1>Welcome back</h1>
+          <p className="muted">Log in to track your home expenses</p>
+        </div>
+
         {error && <p className="error">{error}</p>}
+
         <label>
           Email
           <input
             type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -43,16 +52,17 @@ export default function LoginPage() {
           Password
           <input
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </label>
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Logging in..." : "Login"}
+        <button type="submit" className="btn btn-primary" disabled={submitting}>
+          {submitting ? "Logging in..." : "Log in"}
         </button>
-        <p>
-          No account? <Link to="/register">Register</Link>
+        <p className="auth-switch">
+          New here? <Link to="/register">Create an account</Link>
         </p>
       </form>
     </div>

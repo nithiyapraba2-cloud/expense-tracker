@@ -4,18 +4,21 @@ import {
   Get,
   HttpCode,
   Post,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { AuthGuard } from './auth.guard.js';
 import { CreateUserDto } from '../modules/users/dto/create-user.dto.js';
 import { LoginDto } from './dto/login.dto.js';
-import type { Request } from 'express';
+import { UsersService } from '../modules/users/users.service.js';
+import { CurrentUserId } from '../common/decorators/current-user.decorator.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post('register')
   register(@Body() createUserDto: CreateUserDto) {
@@ -30,7 +33,8 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @Get('me')
-  me(@Req() req: Request & { user: unknown }) {
-    return req.user;
+  me(@CurrentUserId() userId: string) {
+    // Read from the DB so the name is included (the token only has id + email)
+    return this.usersService.findOne(userId);
   }
 }

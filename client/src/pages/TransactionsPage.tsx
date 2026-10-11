@@ -9,14 +9,36 @@ import {
 import { deleteTransaction, getTransactions } from "../api/transactions";
 import { getErrorMessage } from "../api/client";
 import TransactionItem from "../components/TransactionItem";
+import MonthPicker from "../components/MonthPicker";
+import { PlusIcon } from "../components/Icons";
 import type {
   Transaction,
   TransactionFilters,
   TransactionType,
 } from "../types/transaction";
-import { currentMonth, formatINR, monthRange } from "../utils/format";
+import {
+  currentMonth,
+  formatDayHeading,
+  formatINR,
+  monthRange,
+} from "../utils/format";
 
 const LIMIT = 20;
+
+const TYPE_FILTERS: { value: TransactionType | ""; label: string }[] = [
+  { value: "", label: "All" },
+  { value: "expense", label: "Expenses" },
+  { value: "income", label: "Income" },
+];
+
+// Group a (date-sorted) list into [date, transactions] pairs
+function groupByDate(list: Transaction[]) {
+  const groups = new Map<string, Transaction[]>();
+  for (const tx of list) {
+    groups.set(tx.date, [...(groups.get(tx.date) ?? []), tx]);
+  }
+  return [...groups];
+}
 
 export default function TransactionsPage() {
   const queryClient = useQueryClient();
@@ -63,61 +85,89 @@ export default function TransactionsPage() {
     <div className="page">
       <div className="page-header">
         <h1>Transactions</h1>
-        <Link to="/transactions/new">+ Add</Link>
+        <Link to="/transactions/new" className="btn btn-primary desktop-only">
+          <PlusIcon size={18} /> Add
+        </Link>
       </div>
 
-      <div className="filters">
-        <input
-          type="month"
+      <div className="toolbar">
+        <MonthPicker
           value={month}
-          onChange={(e) => {
-            if (e.target.value) {
-              setMonth(e.target.value);
-              setPage(1);
-            }
-          }}
-        />
-        <select
-          value={type}
-          onChange={(e) => {
-            setType(e.target.value as TransactionType | "");
+          onChange={(m) => {
+            setMonth(m);
             setPage(1);
           }}
-        >
-          <option value="">All</option>
-          <option value="expense">Expenses</option>
-          <option value="income">Income</option>
-        </select>
+        />
+        <div className="segmented" role="group" aria-label="Filter by type">
+          {TYPE_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              className={type === f.value ? "active" : ""}
+              onClick={() => {
+                setType(f.value);
+                setPage(1);
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {deleteMutation.isError && (
         <p className="error">{getErrorMessage(deleteMutation.error)}</p>
       )}
+      {isError && <p className="error">{getErrorMessage(error)}</p>}
 
-      <section className="card">
-        {isPending && <p>Loading...</p>}
-        {isError && <p className="error">{getErrorMessage(error)}</p>}
-        {data && data.data.length === 0 && (
-          <p className="muted">No transactions found.</p>
-        )}
-        {data && data.data.length > 0 && (
-          <ul className="tx-list">
-            {data.data.map((tx) => (
-              <TransactionItem key={tx.id} tx={tx} onDelete={handleDelete} />
-            ))}
-          </ul>
-        )}
-      </section>
+      {isPending && (
+        <section className="card">
+          <div className="skeleton" />
+        </section>
+      )}
+
+      {data && data.data.length === 0 && (
+        <section className="card">
+          <p className="empty">
+            No transactions in this month.{" "}
+            <Link to="/transactions/new">Add one</Link>
+          </p>
+        </section>
+      )}
+
+      {data && data.data.length > 0 && (
+        <section className="card">
+          {groupByDate(data.data).map(([date, items]) => (
+            <div className="day-group" key={date}>
+              <h3 className="day-heading">{formatDayHeading(date)}</h3>
+              <ul className="tx-list">
+                {items.map((tx) => (
+                  <TransactionItem
+                    key={tx.id}
+                    tx={tx}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
 
       {totalPages > 1 && (
         <div className="pagination">
-          <button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            Prev
+          <button
+            className="btn btn-secondary"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            Previous
           </button>
           <span>
             Page {page} of {totalPages}
           </span>
           <button
+            className="btn btn-secondary"
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
