@@ -216,3 +216,20 @@ select {
   align-items: center;
   gap: 16px;
 }
+.chart {
+  width: 100%;
+  height: 300px;
+}
+.highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.highlights .card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.highlights strong {
+  font-size: 20px;
+}

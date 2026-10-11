@@ -30,6 +30,9 @@ export default function Layout() {
         <NavLink to="/transactions/new">
           ➕<span>Add</span>
         </NavLink>
+        <NavLink to="/reports">
+          📊<span>Reports</span>
+        </NavLink>
       </nav>
     </div>
   );

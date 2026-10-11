@@ -4,6 +4,13 @@ const inr = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 2,
 });
 
+const inrCompact = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
 // 45000 → ₹45,000
 export function formatINR(amount: number) {
   return inr.format(amount);
@@ -41,4 +48,18 @@ export function monthRange(month: string) {
   const [y, m] = month.split("-").map(Number);
   const lastDay = new Date(y, m, 0).getDate();
   return { from: `${month}-01`, to: `${month}-${pad(lastDay)}` };
+}
+
+// 45000 → ₹45K, 150000 → ₹1.5L (for chart axes)
+export function formatINRCompact(amount: number) {
+  return inrCompact.format(amount);
+}
+
+// '2026-10' → 'Oct 26'
+export function formatMonthShort(month: string) {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(y, m - 1).toLocaleDateString("en-IN", {
+    month: "short",
+    year: "2-digit",
+  });
 }
