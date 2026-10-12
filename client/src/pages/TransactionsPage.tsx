@@ -31,6 +31,7 @@ import {
   formatINR,
   monthRange,
 } from "../utils/format";
+import { getNextPage, groupByDate } from "../utils/transactions";
 
 const LIMIT = 20;
 
@@ -39,15 +40,6 @@ const TYPE_FILTERS: { value: TransactionType | ""; label: string }[] = [
   { value: "expense", label: "Expenses" },
   { value: "income", label: "Income" },
 ];
-
-// Group a (date-sorted) list into [date, transactions] pairs
-function groupByDate(list: Transaction[]) {
-  const groups = new Map<string, Transaction[]>();
-  for (const tx of list) {
-    groups.set(tx.date, [...(groups.get(tx.date) ?? []), tx]);
-  }
-  return [...groups];
-}
 
 export default function TransactionsPage() {
   const queryClient = useQueryClient();
@@ -76,8 +68,7 @@ export default function TransactionsPage() {
     queryKey: ["transactions", "infinite", filters],
     queryFn: ({ pageParam }) => getTransactions({ ...filters, page: pageParam }),
     initialPageParam: 1,
-    getNextPageParam: (last) =>
-      last.page * last.limit < last.total ? last.page + 1 : undefined,
+    getNextPageParam: getNextPage,
     placeholderData: keepPreviousData, // keep the old list visible while filters change
   });
 
