@@ -1,7 +1,12 @@
 import Button from "react-bootstrap/Button";
 import InputGroup from "react-bootstrap/InputGroup";
 import { ChevronLeftIcon, ChevronRightIcon } from "./Icons";
-import { currentMonth, formatMonth, shiftMonth } from "../utils/format";
+import {
+  currentMonth,
+  formatMonth,
+  formatMonthMedium,
+  shiftMonth,
+} from "../utils/format";
 
 interface Props {
   value: string; // 'YYYY-MM'
@@ -22,7 +27,8 @@ export default function MonthPicker({ value, onChange }: Props) {
         <ChevronLeftIcon size={18} />
       </Button>
       <InputGroup.Text className="month-label">
-        {formatMonth(value)}
+        <span className="d-none d-sm-inline">{formatMonth(value)}</span>
+        <span className="d-sm-none">{formatMonthMedium(value)}</span>
       </InputGroup.Text>
       <Button
         variant="outline-secondary"

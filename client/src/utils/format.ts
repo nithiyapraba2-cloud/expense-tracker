@@ -55,6 +55,15 @@ export function formatMonth(month: string) {
   });
 }
 
+// '2026-10' → 'Oct 2026' (month picker on phones)
+export function formatMonthMedium(month: string) {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(y, m - 1).toLocaleDateString("en-IN", {
+    month: "short",
+    year: "numeric",
+  });
+}
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 // Today's date in LOCAL time as 'YYYY-MM-DD'

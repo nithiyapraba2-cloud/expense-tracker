@@ -45,7 +45,14 @@ export default function DashboardPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <p className="eyebrow">Welcome back{firstName && `, ${firstName}`}</p>
+          <p className="eyebrow">
+            Welcome back
+            {firstName && (
+              <>
+                , <strong>{firstName}</strong>
+              </>
+            )}
+          </p>
           <h1>Overview</h1>
         </div>
         <MonthPicker value={month} onChange={setMonth} />

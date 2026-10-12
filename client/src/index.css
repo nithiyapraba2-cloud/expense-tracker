@@ -290,7 +290,7 @@ input[type="number"]::-webkit-outer-spin-button {
   --bs-alert-bg: var(--warning-bg);
 }
 
-/* List groups, progress bars, pagination, modals */
+/* List groups, progress bars, modals */
 .list-group {
   --bs-list-group-bg: transparent;
   --bs-list-group-border-color: var(--border);
@@ -300,22 +300,6 @@ input[type="number"]::-webkit-outer-spin-button {
   --bs-progress-bg: var(--surface-2);
   --bs-progress-bar-bg: var(--primary);
   --bs-progress-border-radius: 4px;
-}
-.pagination {
-  --bs-pagination-color: var(--primary);
-  --bs-pagination-bg: var(--surface);
-  --bs-pagination-border-color: var(--border);
-  --bs-pagination-hover-color: var(--primary-hover);
-  --bs-pagination-hover-bg: var(--surface-2);
-  --bs-pagination-hover-border-color: var(--border);
-  --bs-pagination-focus-color: var(--primary-hover);
-  --bs-pagination-focus-bg: var(--surface-2);
-  --bs-pagination-focus-box-shadow: 0 0 0 3px var(--primary-soft);
-  --bs-pagination-disabled-color: var(--muted);
-  --bs-pagination-disabled-bg: var(--surface);
-  --bs-pagination-disabled-border-color: var(--border);
-  --bs-pagination-border-radius: var(--radius-sm);
-  margin: 0;
 }
 .modal {
   --bs-modal-bg: var(--surface);
@@ -401,17 +385,21 @@ a:hover {
 }
 
 /* ============ App shell ============ */
-/* Brand: full logo in light theme, mark + wordmark in dark theme */
+/* Brand: full logo in light theme, mark + wordmark in dark theme.
+   The wordmark is only ~1/4 of the full logo's height, so the full logo
+   needs a tall box for its text to read at body-text size. */
 .brand {
-  --logo-h: 40px;
+  --logo-h: 60px; /* full logo image */
+  --mark-h: 40px; /* round mark; wordmark text is half this */
   display: inline-flex;
   align-items: center;
 }
 .brand-sm {
-  --logo-h: 32px;
+  --mark-h: 34px;
 }
 .brand-lg {
-  --logo-h: 64px;
+  --logo-h: 88px;
+  --mark-h: 52px;
 }
 .brand-full {
   display: block;
@@ -424,17 +412,24 @@ a:hover {
   gap: 10px;
 }
 .brand-compact img {
-  height: var(--logo-h);
-  width: var(--logo-h);
+  height: var(--mark-h);
+  width: var(--mark-h);
 }
 .brand-word {
   font-weight: 800;
-  font-size: calc(var(--logo-h) * 0.5);
+  font-size: calc(var(--mark-h) * 0.5);
   letter-spacing: -0.02em;
   color: var(--text);
 }
 .brand-word span {
   color: var(--primary);
+}
+/* Small slots (mobile top bar) are too short for the full logo's text */
+.brand-sm .brand-full {
+  display: none;
+}
+.brand-sm .brand-compact {
+  display: inline-flex;
 }
 @media (prefers-color-scheme: dark) {
   .brand-full {
@@ -604,13 +599,24 @@ a:hover {
   gap: 12px;
   flex-wrap: wrap;
 }
+/* Title and month picker stay on one row, even on phones */
+.page-header {
+  flex-wrap: nowrap;
+}
+.page-header > :first-child {
+  min-width: 0;
+}
 .section-header {
   margin-bottom: 14px;
 }
 .eyebrow {
   margin: 0 0 2px;
-  font-size: 13px;
-  color: var(--muted);
+  font-size: 14px;
+  color: var(--text-2);
+}
+.eyebrow strong {
+  font-weight: 600;
+  color: var(--primary);
 }
 .title-with-back {
   display: flex;
@@ -635,6 +641,9 @@ a:hover {
   --bs-btn-padding-x: 10px;
   --bs-btn-padding-y: 6px;
 }
+.month-picker {
+  flex: none;
+}
 .month-label {
   min-width: 132px;
   justify-content: center;
@@ -642,6 +651,18 @@ a:hover {
   font-size: 14px;
   background: var(--surface);
   color: var(--text);
+}
+/* Phones: compact picker ("Oct 2026") that fits beside the page title */
+@media (max-width: 575.98px) {
+  .month-picker .btn {
+    --bs-btn-padding-x: 7px;
+    --bs-btn-padding-y: 5px;
+  }
+  .month-label {
+    min-width: 84px;
+    padding: 5px 6px;
+    font-size: 13px;
+  }
 }
 
 /* ============ Dashboard ============ */
@@ -874,20 +895,49 @@ a:hover {
 .tx-amount.expense {
   color: var(--text);
 }
-.tx-actions {
-  display: flex;
-  gap: 2px;
+/* ⋮ menu with Edit / Delete */
+.tx-menu {
+  margin-right: -6px;
 }
-/* On mouse devices, show edit/delete only on hover */
-@media (hover: hover) {
-  .tx-actions {
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-  .tx-item:hover .tx-actions,
-  .tx-actions:focus-within {
-    opacity: 1;
-  }
+.tx-menu-toggle {
+  --bs-btn-color: var(--muted);
+}
+.tx-menu-toggle.show {
+  --bs-btn-color: var(--text);
+  --bs-btn-bg: var(--surface-2);
+}
+.tx-menu .dropdown-menu {
+  --bs-dropdown-bg: var(--surface);
+  --bs-dropdown-border-color: var(--border);
+  --bs-dropdown-border-radius: var(--radius-sm);
+  --bs-dropdown-padding-y: 6px;
+  --bs-dropdown-min-width: 150px;
+  --bs-dropdown-link-color: var(--text);
+  --bs-dropdown-link-hover-color: var(--text);
+  --bs-dropdown-link-hover-bg: var(--surface-2);
+  --bs-dropdown-link-active-color: var(--text);
+  --bs-dropdown-link-active-bg: var(--surface-2);
+  --bs-dropdown-item-padding-x: 14px;
+  --bs-dropdown-item-padding-y: 9px;
+  box-shadow: var(--shadow-lg);
+}
+.tx-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.tx-menu .dropdown-item svg {
+  color: var(--muted);
+}
+.tx-menu .dropdown-item.text-danger,
+.tx-menu .dropdown-item.text-danger svg {
+  color: var(--expense) !important;
+}
+.tx-menu .dropdown-item.text-danger:hover {
+  background: var(--expense-soft);
 }
 .day-group + .day-group {
   margin-top: 8px;
@@ -902,8 +952,16 @@ a:hover {
   color: var(--muted);
   margin-bottom: 4px;
 }
-.page-count {
-  color: var(--text-2);
+/* Bottom of the infinite list: spinner / "Load more" / end note */
+.list-end {
+  display: flex;
+  justify-content: center;
+  padding-top: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.list-end:empty {
+  display: none;
 }
 
 /* ============ Form ============ */
@@ -931,13 +989,76 @@ a:hover {
   box-shadow: none;
 }
 .amount-input.expense .form-control {
-  color: var(--expense);
+  color: var(--text-2);
 }
 .amount-input.income .form-control {
   color: var(--income);
 }
+
+/* Expense / Income switch: raised white segment on a grey track */
+.type-toggle {
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.type-toggle > .btn {
+  --bs-btn-color: var(--muted);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: var(--text-2);
+  --bs-btn-hover-bg: transparent;
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-bg: var(--surface);
+  --bs-btn-active-border-color: transparent;
+  --bs-btn-padding-y: 9px;
+  flex: 1;
+  margin-left: 0 !important;
+  border-radius: 9px !important;
+}
+.type-toggle > .btn-check:checked + .btn {
+  box-shadow: var(--shadow);
+}
+.type-toggle > .btn-outline-danger {
+  --bs-btn-active-color: var(--expense);
+}
+.type-toggle > .btn-outline-success {
+  --bs-btn-active-color: var(--income);
+}
+
+/* Selected chips: soft tint + coloured border instead of a solid fill */
 .chip {
   --bs-btn-font-weight: 500;
+}
+.btn-chip-expense,
+.btn-chip-income,
+.btn-chip-primary {
+  --bs-btn-color: var(--chip-color);
+  --bs-btn-bg: var(--chip-bg);
+  --bs-btn-border-color: var(--chip-color);
+  --bs-btn-hover-color: var(--chip-color);
+  --bs-btn-hover-bg: var(--chip-bg);
+  --bs-btn-hover-border-color: var(--chip-color);
+  --bs-btn-active-color: var(--chip-color);
+  --bs-btn-active-bg: var(--chip-bg);
+  --bs-btn-active-border-color: var(--chip-color);
+  --bs-btn-font-weight: 600;
+}
+.btn-chip-expense {
+  --chip-color: var(--expense);
+  --chip-bg: var(--expense-soft);
+  --bs-btn-focus-shadow-rgb: var(--expense-rgb);
+}
+.btn-chip-income {
+  --chip-color: var(--income);
+  --chip-bg: var(--income-soft);
+  --bs-btn-focus-shadow-rgb: var(--income-rgb);
+}
+.btn-chip-primary {
+  --chip-color: var(--primary);
+  --chip-bg: var(--primary-soft);
+  --bs-btn-focus-shadow-rgb: var(--primary-rgb);
 }
 .chip-icon {
   font-size: 16px;

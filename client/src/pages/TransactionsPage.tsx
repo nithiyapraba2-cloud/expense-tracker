@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   keepPreviousData,
+  useInfiniteQuery,
   useMutation,
-  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import Alert from "react-bootstrap/Alert";
@@ -11,7 +11,6 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import ListGroup from "react-bootstrap/ListGroup";
 import Modal from "react-bootstrap/Modal";
-import Pagination from "react-bootstrap/Pagination";
 import Spinner from "react-bootstrap/Spinner";
 import ToggleButton from "react-bootstrap/ToggleButton";
 import ToggleButtonGroup from "react-bootstrap/ToggleButtonGroup";
@@ -54,29 +53,55 @@ export default function TransactionsPage() {
   const queryClient = useQueryClient();
   const [month, setMonth] = useState(currentMonth);
   const [type, setType] = useState<TransactionType | "">("");
-  const [page, setPage] = useState(1);
   const [toDelete, setToDelete] = useState<Transaction | null>(null);
 
   const { from, to } = monthRange(month);
   const filters: TransactionFilters = {
     from,
     to,
-    page,
     limit: LIMIT,
     type: type || undefined, // '' means "all", so send nothing
   };
 
-  const { data, isPending, isError, error } = useQuery({
-    queryKey: ["transactions", filters],
-    queryFn: () => getTransactions(filters),
-    placeholderData: keepPreviousData, // keep the old page visible while the next loads
+  // Infinite scroll: each "page" from the API is appended to one list
+  const {
+    data,
+    isPending,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["transactions", "infinite", filters],
+    queryFn: ({ pageParam }) => getTransactions({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (last) =>
+      last.page * last.limit < last.total ? last.page + 1 : undefined,
+    placeholderData: keepPreviousData, // keep the old list visible while filters change
   });
+
+  const transactions = data?.pages.flatMap((p) => p.data) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
+
+  // Load the next page when the bottom of the list scrolls into view
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasNextPage) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetchingNextPage) fetchNextPage();
+      },
+      { rootMargin: "300px" }, // start a bit before the user hits the end
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteTransaction,
     onSuccess: () => {
-      // Deleted the last item on this page: go back so we don't land on an empty page
-      if (data?.data.length === 1 && page > 1) setPage((p) => p - 1);
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["summary"] });
       queryClient.invalidateQueries({ queryKey: ["trend"] });
@@ -91,8 +116,6 @@ export default function TransactionsPage() {
     });
   }
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / LIMIT)) : 1;
-
   return (
     <div className="page">
       <div className="page-header">
@@ -103,21 +126,12 @@ export default function TransactionsPage() {
       </div>
 
       <div className="toolbar">
-        <MonthPicker
-          value={month}
-          onChange={(m) => {
-            setMonth(m);
-            setPage(1);
-          }}
-        />
+        <MonthPicker value={month} onChange={setMonth} />
         <ToggleButtonGroup
           type="radio"
           name="type-filter"
           value={type}
-          onChange={(value: TransactionType | "") => {
-            setType(value);
-            setPage(1);
-          }}
+          onChange={(value: TransactionType | "") => setType(value)}
           aria-label="Filter by type"
         >
           {TYPE_FILTERS.map((f) => (
@@ -145,7 +159,7 @@ export default function TransactionsPage() {
         </Card>
       )}
 
-      {data && data.data.length === 0 && (
+      {data && transactions.length === 0 && (
         <Card body>
           <p className="empty">
             No transactions in this month.{" "}
@@ -154,9 +168,9 @@ export default function TransactionsPage() {
         </Card>
       )}
 
-      {data && data.data.length > 0 && (
+      {transactions.length > 0 && (
         <Card body>
-          {groupByDate(data.data).map(([date, items]) => (
+          {groupByDate(transactions).map(([date, items]) => (
             <div className="day-group" key={date}>
               <h3 className="day-heading">{formatDayHeading(date)}</h3>
               <ListGroup as="ul" variant="flush">
@@ -170,27 +184,26 @@ export default function TransactionsPage() {
               </ListGroup>
             </div>
           ))}
-        </Card>
-      )}
 
-      {totalPages > 1 && (
-        <Pagination className="justify-content-center">
-          <Pagination.Prev
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Previous
-          </Pagination.Prev>
-          <Pagination.Item disabled className="page-count">
-            Page {page} of {totalPages}
-          </Pagination.Item>
-          <Pagination.Next
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Pagination.Next>
-        </Pagination>
+          <div ref={sentinelRef} className="list-end">
+            {isFetchingNextPage ? (
+              <Spinner animation="border" size="sm" aria-label="Loading more" />
+            ) : hasNextPage ? (
+              // Fallback if the automatic load doesn't fire
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => fetchNextPage()}
+              >
+                Load more
+              </Button>
+            ) : (
+              total > LIMIT && (
+                <span>All {total} transactions shown</span>
+              )
+            )}
+          </div>
+        </Card>
       )}
 
       <Modal show={toDelete !== null} onHide={() => setToDelete(null)} centered>

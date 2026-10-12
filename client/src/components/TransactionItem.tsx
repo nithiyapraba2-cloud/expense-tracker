@@ -1,9 +1,9 @@
-import Button from "react-bootstrap/Button";
+import { Link } from "react-router-dom";
+import Dropdown from "react-bootstrap/Dropdown";
 import ListGroup from "react-bootstrap/ListGroup";
 import type { Transaction } from "../types/transaction";
 import { formatINR } from "../utils/format";
-import { PencilIcon, TrashIcon } from "./Icons";
-import LinkButton from "./LinkButton";
+import { MoreIcon, PencilIcon, TrashIcon } from "./Icons";
 
 const PAYMENT_LABEL = { cash: "Cash", upi: "UPI", card: "Card", bank: "Bank" };
 
@@ -32,27 +32,30 @@ export default function TransactionItem({ tx, onDelete }: Props) {
         {formatINR(tx.amount)}
       </span>
       {onDelete && (
-        <div className="tx-actions">
-          <LinkButton
-            to={`/transactions/${tx.id}/edit`}
+        <Dropdown align="end" className="tx-menu">
+          <Dropdown.Toggle
             variant="icon"
             size="sm"
-            aria-label="Edit"
-            title="Edit"
+            bsPrefix="tx-menu-toggle" // drops Bootstrap's caret
+            aria-label={`Actions for ${tx.category.name}`}
           >
-            <PencilIcon size={16} />
-          </LinkButton>
-          <Button
-            variant="icon"
-            size="sm"
-            className="danger"
-            onClick={() => onDelete(tx)}
-            aria-label="Delete"
-            title="Delete"
-          >
-            <TrashIcon size={16} />
-          </Button>
-        </div>
+            <MoreIcon size={18} />
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item as={Link} to={`/transactions/${tx.id}/edit`}>
+              <PencilIcon size={16} />
+              Edit
+            </Dropdown.Item>
+            <Dropdown.Item
+              as="button"
+              className="text-danger"
+              onClick={() => onDelete(tx)}
+            >
+              <TrashIcon size={16} />
+              Delete
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
       )}
     </ListGroup.Item>
   );

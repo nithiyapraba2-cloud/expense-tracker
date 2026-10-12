@@ -73,7 +73,13 @@ export const TrashIcon = (p: P) => (
   </Icon>
 );
 
-export const ArrowDownIcon = (p: P) => (
+export const MoreIcon = (p: P) => (
+  <Icon strokeWidth={3} {...p}>
+    <path d="M12 5h.01M12 12h.01M12 19h.01" />
+  </Icon>
+);
+
+export const ArrowDownIcon =(p: P) => (
   <Icon {...p}>
     <path d="M12 5v14M19 12l-7 7-7-7" />
   </Icon>

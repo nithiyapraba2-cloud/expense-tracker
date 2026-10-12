@@ -18,7 +18,11 @@ import {
 } from "../api/transactions";
 import { getCategories } from "../api/categories";
 import { getErrorMessage } from "../api/client";
-import { ChevronLeftIcon } from "../components/Icons";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronLeftIcon,
+} from "../components/Icons";
 import LinkButton from "../components/LinkButton";
 import type {
   PaymentMethod,
@@ -116,8 +120,8 @@ function TransactionForm({ initial }: { initial?: Transaction }) {
     });
   }
 
-  // Selected chips take the colour of the transaction type
-  const selectedVariant = type === "expense" ? "danger" : "success";
+  // Selected chips get a soft tint in the transaction type's colour
+  const selectedVariant = `chip-${type}`;
 
   return (
     <div className="page narrow">
@@ -138,7 +142,7 @@ function TransactionForm({ initial }: { initial?: Transaction }) {
               name="type"
               value={type}
               onChange={changeType}
-              className="w-100"
+              className="type-toggle w-100"
               aria-label="Type"
             >
               <ToggleButton
@@ -146,6 +150,7 @@ function TransactionForm({ initial }: { initial?: Transaction }) {
                 value="expense"
                 variant="outline-danger"
               >
+                <ArrowUpIcon size={16} />
                 Expense
               </ToggleButton>
               <ToggleButton
@@ -153,6 +158,7 @@ function TransactionForm({ initial }: { initial?: Transaction }) {
                 value="income"
                 variant="outline-success"
               >
+                <ArrowDownIcon size={16} />
                 Income
               </ToggleButton>
             </ToggleButtonGroup>
@@ -224,7 +230,7 @@ function TransactionForm({ initial }: { initial?: Transaction }) {
                         size="sm"
                         variant={
                           paymentMethod === m.value
-                            ? "primary"
+                            ? "chip-primary"
                             : "outline-secondary"
                         }
                         className="chip rounded-pill"
