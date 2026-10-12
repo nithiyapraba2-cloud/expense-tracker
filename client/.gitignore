@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local env overrides (machine-specific, e.g. your PC IP)
+.env.android

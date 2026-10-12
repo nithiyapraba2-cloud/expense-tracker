@@ -1,0 +1,3 @@
+# Windows scripts need CRLF, Unix scripts need LF
+*.bat text eol=crlf
+gradlew text eol=lf
