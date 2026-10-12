@@ -6,8 +6,18 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import Alert from "react-bootstrap/Alert";
+import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
+import ListGroup from "react-bootstrap/ListGroup";
+import Modal from "react-bootstrap/Modal";
+import Pagination from "react-bootstrap/Pagination";
+import Spinner from "react-bootstrap/Spinner";
+import ToggleButton from "react-bootstrap/ToggleButton";
+import ToggleButtonGroup from "react-bootstrap/ToggleButtonGroup";
 import { deleteTransaction, getTransactions } from "../api/transactions";
 import { getErrorMessage } from "../api/client";
+import LinkButton from "../components/LinkButton";
 import TransactionItem from "../components/TransactionItem";
 import MonthPicker from "../components/MonthPicker";
 import { PlusIcon } from "../components/Icons";
@@ -45,6 +55,7 @@ export default function TransactionsPage() {
   const [month, setMonth] = useState(currentMonth);
   const [type, setType] = useState<TransactionType | "">("");
   const [page, setPage] = useState(1);
+  const [toDelete, setToDelete] = useState<Transaction | null>(null);
 
   const { from, to } = monthRange(month);
   const filters: TransactionFilters = {
@@ -73,10 +84,11 @@ export default function TransactionsPage() {
     },
   });
 
-  function handleDelete(tx: Transaction) {
-    if (window.confirm(`Delete ${tx.category.name} ${formatINR(tx.amount)}?`)) {
-      deleteMutation.mutate(tx.id);
-    }
+  function confirmDelete() {
+    if (!toDelete) return;
+    deleteMutation.mutate(toDelete.id, {
+      onSettled: () => setToDelete(null),
+    });
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / LIMIT)) : 1;
@@ -85,9 +97,9 @@ export default function TransactionsPage() {
     <div className="page">
       <div className="page-header">
         <h1>Transactions</h1>
-        <Link to="/transactions/new" className="btn btn-primary desktop-only">
+        <LinkButton to="/transactions/new" className="d-none d-lg-inline-flex">
           <PlusIcon size={18} /> Add
-        </Link>
+        </LinkButton>
       </div>
 
       <div className="toolbar">
@@ -98,83 +110,119 @@ export default function TransactionsPage() {
             setPage(1);
           }}
         />
-        <div className="segmented" role="group" aria-label="Filter by type">
+        <ToggleButtonGroup
+          type="radio"
+          name="type-filter"
+          value={type}
+          onChange={(value: TransactionType | "") => {
+            setType(value);
+            setPage(1);
+          }}
+          aria-label="Filter by type"
+        >
           {TYPE_FILTERS.map((f) => (
-            <button
+            <ToggleButton
               key={f.value}
-              type="button"
-              className={type === f.value ? "active" : ""}
-              onClick={() => {
-                setType(f.value);
-                setPage(1);
-              }}
+              id={`type-filter-${f.value || "all"}`}
+              value={f.value}
+              variant="outline-secondary"
+              size="sm"
             >
               {f.label}
-            </button>
+            </ToggleButton>
           ))}
-        </div>
+        </ToggleButtonGroup>
       </div>
 
       {deleteMutation.isError && (
-        <p className="error">{getErrorMessage(deleteMutation.error)}</p>
+        <Alert variant="danger">{getErrorMessage(deleteMutation.error)}</Alert>
       )}
-      {isError && <p className="error">{getErrorMessage(error)}</p>}
+      {isError && <Alert variant="danger">{getErrorMessage(error)}</Alert>}
 
       {isPending && (
-        <section className="card">
+        <Card body>
           <div className="skeleton" />
-        </section>
+        </Card>
       )}
 
       {data && data.data.length === 0 && (
-        <section className="card">
+        <Card body>
           <p className="empty">
             No transactions in this month.{" "}
             <Link to="/transactions/new">Add one</Link>
           </p>
-        </section>
+        </Card>
       )}
 
       {data && data.data.length > 0 && (
-        <section className="card">
+        <Card body>
           {groupByDate(data.data).map(([date, items]) => (
             <div className="day-group" key={date}>
               <h3 className="day-heading">{formatDayHeading(date)}</h3>
-              <ul className="tx-list">
+              <ListGroup as="ul" variant="flush">
                 {items.map((tx) => (
                   <TransactionItem
                     key={tx.id}
                     tx={tx}
-                    onDelete={handleDelete}
+                    onDelete={setToDelete}
                   />
                 ))}
-              </ul>
+              </ListGroup>
             </div>
           ))}
-        </section>
+        </Card>
       )}
 
       {totalPages > 1 && (
-        <div className="pagination">
-          <button
-            className="btn btn-secondary"
+        <Pagination className="justify-content-center">
+          <Pagination.Prev
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
           >
             Previous
-          </button>
-          <span>
+          </Pagination.Prev>
+          <Pagination.Item disabled className="page-count">
             Page {page} of {totalPages}
-          </span>
-          <button
-            className="btn btn-secondary"
+          </Pagination.Item>
+          <Pagination.Next
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
             Next
-          </button>
-        </div>
+          </Pagination.Next>
+        </Pagination>
       )}
+
+      <Modal show={toDelete !== null} onHide={() => setToDelete(null)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title as="h2">Delete transaction?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {toDelete && (
+            <>
+              <strong>
+                {toDelete.category.name} {formatINR(toDelete.amount)}
+              </strong>{" "}
+              will be removed. This can't be undone.
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setToDelete(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={confirmDelete}
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending && (
+              <Spinner animation="border" size="sm" />
+            )}
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

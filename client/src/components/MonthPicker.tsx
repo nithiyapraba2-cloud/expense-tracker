@@ -1,3 +1,5 @@
+import Button from "react-bootstrap/Button";
+import InputGroup from "react-bootstrap/InputGroup";
 import { ChevronLeftIcon, ChevronRightIcon } from "./Icons";
 import { currentMonth, formatMonth, shiftMonth } from "../utils/format";
 
@@ -11,25 +13,25 @@ export default function MonthPicker({ value, onChange }: Props) {
   const isCurrent = value >= currentMonth();
 
   return (
-    <div className="month-picker">
-      <button
-        type="button"
-        className="icon-btn"
+    <InputGroup className="month-picker w-auto">
+      <Button
+        variant="outline-secondary"
         aria-label="Previous month"
         onClick={() => onChange(shiftMonth(value, -1))}
       >
         <ChevronLeftIcon size={18} />
-      </button>
-      <span>{formatMonth(value)}</span>
-      <button
-        type="button"
-        className="icon-btn"
+      </Button>
+      <InputGroup.Text className="month-label">
+        {formatMonth(value)}
+      </InputGroup.Text>
+      <Button
+        variant="outline-secondary"
         aria-label="Next month"
         disabled={isCurrent}
         onClick={() => onChange(shiftMonth(value, 1))}
       >
         <ChevronRightIcon size={18} />
-      </button>
-    </div>
+      </Button>
+    </InputGroup>
   );
 }

@@ -1,6 +1,16 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Alert from "react-bootstrap/Alert";
+import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
+import Col from "react-bootstrap/Col";
+import Form from "react-bootstrap/Form";
+import InputGroup from "react-bootstrap/InputGroup";
+import Row from "react-bootstrap/Row";
+import Spinner from "react-bootstrap/Spinner";
+import ToggleButton from "react-bootstrap/ToggleButton";
+import ToggleButtonGroup from "react-bootstrap/ToggleButtonGroup";
 import {
   createTransaction,
   getTransaction,
@@ -9,6 +19,7 @@ import {
 import { getCategories } from "../api/categories";
 import { getErrorMessage } from "../api/client";
 import { ChevronLeftIcon } from "../components/Icons";
+import LinkButton from "../components/LinkButton";
 import type {
   PaymentMethod,
   Transaction,
@@ -37,13 +48,13 @@ export default function TransactionFormPage() {
   if (isEdit && existing.isPending)
     return (
       <div className="page narrow">
-        <div className="card">
+        <Card body>
           <div className="skeleton" />
-        </div>
+        </Card>
       </div>
     );
   if (isEdit && existing.isError)
-    return <p className="error">{getErrorMessage(existing.error)}</p>;
+    return <Alert variant="danger">{getErrorMessage(existing.error)}</Alert>;
 
   // key forces a fresh form when switching between add and edit
   return <TransactionForm key={id ?? "new"} initial={existing.data} />;
@@ -105,136 +116,163 @@ function TransactionForm({ initial }: { initial?: Transaction }) {
     });
   }
 
+  // Selected chips take the colour of the transaction type
+  const selectedVariant = type === "expense" ? "danger" : "success";
+
   return (
     <div className="page narrow">
       <div className="page-header">
         <div className="title-with-back">
-          <Link to="/transactions" className="icon-btn" aria-label="Back">
+          <LinkButton to="/transactions" variant="icon" aria-label="Back">
             <ChevronLeftIcon />
-          </Link>
+          </LinkButton>
           <h1>{initial ? "Edit transaction" : "New transaction"}</h1>
         </div>
       </div>
 
-      <form className="card form" onSubmit={handleSubmit}>
-        <div className="segmented type-toggle" role="group" aria-label="Type">
-          <button
-            type="button"
-            className={type === "expense" ? "active expense" : ""}
-            onClick={() => changeType("expense")}
-          >
-            Expense
-          </button>
-          <button
-            type="button"
-            className={type === "income" ? "active income" : ""}
-            onClick={() => changeType("income")}
-          >
-            Income
-          </button>
-        </div>
-
-        <label className="amount-field">
-          <span>Amount</span>
-          <div className={`amount-input ${type}`}>
-            <span aria-hidden="true">₹</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0.01"
-              placeholder="0"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              autoFocus={!initial}
-              required
-            />
-          </div>
-        </label>
-
-        <fieldset>
-          <legend>Category</legend>
-          {categories.isPending && <div className="skeleton short" />}
-          {categories.data?.length === 0 && (
-            <p className="muted">No {type} categories yet.</p>
-          )}
-          <div className="chips">
-            {categories.data?.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className={`chip ${categoryId === c.id ? `selected ${type}` : ""}`}
-                aria-pressed={categoryId === c.id}
-                onClick={() => setCategoryId(c.id)}
+      <Card>
+        <Card.Body>
+          <Form className="d-flex flex-column gap-4" onSubmit={handleSubmit}>
+            <ToggleButtonGroup
+              type="radio"
+              name="type"
+              value={type}
+              onChange={changeType}
+              className="w-100"
+              aria-label="Type"
+            >
+              <ToggleButton
+                id="type-expense"
+                value="expense"
+                variant="outline-danger"
               >
-                <span className="chip-icon">{c.icon ?? "•"}</span>
-                {c.name}
-              </button>
-            ))}
-          </div>
-        </fieldset>
+                Expense
+              </ToggleButton>
+              <ToggleButton
+                id="type-income"
+                value="income"
+                variant="outline-success"
+              >
+                Income
+              </ToggleButton>
+            </ToggleButtonGroup>
 
-        <div className="form-row">
-          <label>
-            Date
-            <input
-              type="date"
-              value={date}
-              max={todayISO()}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </label>
+            <Form.Group controlId="amount">
+              <Form.Label>Amount</Form.Label>
+              <InputGroup className={`amount-input ${type}`}>
+                <InputGroup.Text aria-hidden="true">₹</InputGroup.Text>
+                <Form.Control
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  autoFocus={!initial}
+                  required
+                />
+              </InputGroup>
+            </Form.Group>
 
-          <fieldset>
-            <legend>Paid by (optional)</legend>
-            <div className="chips">
-              {PAYMENT_METHODS.map((m) => (
-                <button
-                  key={m.value}
-                  type="button"
-                  className={`chip ${paymentMethod === m.value ? "selected" : ""}`}
-                  aria-pressed={paymentMethod === m.value}
-                  onClick={() =>
-                    setPaymentMethod(paymentMethod === m.value ? "" : m.value)
-                  }
-                >
-                  {m.label}
-                </button>
-              ))}
+            <fieldset>
+              <Form.Label as="legend">Category</Form.Label>
+              {categories.isPending && <div className="skeleton short" />}
+              {categories.data?.length === 0 && (
+                <p className="muted mb-0">No {type} categories yet.</p>
+              )}
+              <div className="d-flex flex-wrap gap-2">
+                {categories.data?.map((c) => (
+                  <Button
+                    key={c.id}
+                    size="sm"
+                    variant={
+                      categoryId === c.id ? selectedVariant : "outline-secondary"
+                    }
+                    className="chip rounded-pill"
+                    aria-pressed={categoryId === c.id}
+                    onClick={() => setCategoryId(c.id)}
+                  >
+                    <span className="chip-icon">{c.icon ?? "•"}</span>
+                    {c.name}
+                  </Button>
+                ))}
+              </div>
+            </fieldset>
+
+            <Row className="g-4">
+              <Col sm={5}>
+                <Form.Group controlId="date">
+                  <Form.Label>Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    value={date}
+                    max={todayISO()}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+
+              <Col sm={7}>
+                <fieldset>
+                  <Form.Label as="legend">Paid by (optional)</Form.Label>
+                  <div className="d-flex flex-wrap gap-2">
+                    {PAYMENT_METHODS.map((m) => (
+                      <Button
+                        key={m.value}
+                        size="sm"
+                        variant={
+                          paymentMethod === m.value
+                            ? "primary"
+                            : "outline-secondary"
+                        }
+                        className="chip rounded-pill"
+                        aria-pressed={paymentMethod === m.value}
+                        onClick={() =>
+                          setPaymentMethod(
+                            paymentMethod === m.value ? "" : m.value,
+                          )
+                        }
+                      >
+                        {m.label}
+                      </Button>
+                    ))}
+                  </div>
+                </fieldset>
+              </Col>
+            </Row>
+
+            <Form.Group controlId="note">
+              <Form.Label>Note (optional)</Form.Label>
+              <Form.Control
+                value={note}
+                maxLength={255}
+                placeholder="e.g. weekly vegetables"
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </Form.Group>
+
+            {error && <Alert variant="danger">{error}</Alert>}
+
+            <div className="form-actions d-flex justify-content-end gap-2">
+              <LinkButton to="/transactions" variant="outline-secondary">
+                Cancel
+              </LinkButton>
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending && (
+                  <Spinner animation="border" size="sm" />
+                )}
+                {mutation.isPending
+                  ? "Saving..."
+                  : initial
+                    ? "Save changes"
+                    : `Add ${type}`}
+              </Button>
             </div>
-          </fieldset>
-        </div>
-
-        <label>
-          Note (optional)
-          <input
-            value={note}
-            maxLength={255}
-            placeholder="e.g. weekly vegetables"
-            onChange={(e) => setNote(e.target.value)}
-          />
-        </label>
-
-        {error && <p className="error">{error}</p>}
-
-        <div className="form-actions">
-          <Link to="/transactions" className="btn btn-secondary">
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending
-              ? "Saving..."
-              : initial
-                ? "Save changes"
-                : `Add ${type}`}
-          </button>
-        </div>
-      </form>
+          </Form>
+        </Card.Body>
+      </Card>
     </div>
   );
 }

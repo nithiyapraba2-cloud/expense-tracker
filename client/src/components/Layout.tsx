@@ -1,4 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
+import Button from "react-bootstrap/Button";
+import Nav from "react-bootstrap/Nav";
+import Navbar from "react-bootstrap/Navbar";
 import { useAuth } from "../context/auth-context";
 import {
   ChartIcon,
@@ -8,6 +11,7 @@ import {
   PlusIcon,
 } from "./Icons";
 import Brand from "./Brand";
+import LinkButton from "./LinkButton";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: HomeIcon, end: true },
@@ -19,74 +23,76 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const displayName = user?.name || user?.email || "";
 
+  const logoutButton = (
+    <Button
+      variant="icon"
+      onClick={logout}
+      aria-label="Log out"
+      title="Log out"
+    >
+      <LogoutIcon size={18} />
+    </Button>
+  );
+
   return (
     <div className="app">
       {/* Desktop: sidebar */}
       <aside className="sidebar">
         <Brand />
 
-        <NavLink to="/transactions/new" className="btn btn-primary sidebar-add">
+        <LinkButton to="/transactions/new" className="w-100">
           <PlusIcon size={18} /> Add transaction
-        </NavLink>
+        </LinkButton>
 
-        <nav className="side-nav">
+        <Nav variant="pills" className="flex-column side-nav">
           {NAV.map(({ to, label, icon: Icon, end }) => (
-            <NavLink key={to} to={to} end={end}>
+            <Nav.Link key={to} as={NavLink} to={to} end={end}>
               <Icon size={18} />
               {label}
-            </NavLink>
+            </Nav.Link>
           ))}
-        </nav>
+        </Nav>
 
         <div className="sidebar-user">
           <span className="avatar">{displayName.charAt(0).toUpperCase()}</span>
           <span className="sidebar-name">{displayName}</span>
-          <button
-            className="icon-btn"
-            onClick={logout}
-            aria-label="Log out"
-            title="Log out"
-          >
-            <LogoutIcon size={18} />
-          </button>
+          {logoutButton}
         </div>
       </aside>
 
       {/* Mobile: top bar */}
-      <header className="topbar">
+      <Navbar sticky="top" className="topbar justify-content-between">
         <Brand size="sm" />
-        <button
-          className="icon-btn"
-          onClick={logout}
-          aria-label="Log out"
-          title="Log out"
-        >
-          <LogoutIcon size={18} />
-        </button>
-      </header>
+        {logoutButton}
+      </Navbar>
 
       <main className="content">
         <Outlet />
       </main>
 
       {/* Mobile: bottom tabs */}
-      <nav className="bottom-nav">
-        <NavLink to="/" end>
+      <Nav as="nav" className="bottom-nav">
+        <Nav.Link as={NavLink} to="/" end>
           <HomeIcon />
           <span>Home</span>
-        </NavLink>
-        <NavLink to="/transactions" end>
+        </Nav.Link>
+        <Nav.Link as={NavLink} to="/transactions" end>
           <ListIcon />
           <span>History</span>
-        </NavLink>
-        <NavLink to="/transactions/new" className="fab" aria-label="Add">
+        </Nav.Link>
+        <Nav.Link
+          as={NavLink}
+          to="/transactions/new"
+          className="fab"
+          aria-label="Add"
+        >
           <PlusIcon size={24} />
-        </NavLink>
-        <NavLink to="/reports">
+        </Nav.Link>
+        <Nav.Link as={NavLink} to="/reports">
           <ChartIcon />
           <span>Reports</span>
-        </NavLink>
-      </nav>
+        </Nav.Link>
+      </Nav>
     </div>
   );
 }

@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import Alert from "react-bootstrap/Alert";
+import Card from "react-bootstrap/Card";
+import Col from "react-bootstrap/Col";
+import ListGroup from "react-bootstrap/ListGroup";
+import Row from "react-bootstrap/Row";
 import { getSummary, getTotals, getTransactions } from "../api/transactions";
 import { getErrorMessage } from "../api/client";
 import { useAuth } from "../context/auth-context";
@@ -66,83 +71,93 @@ export default function DashboardPage() {
       </div>
 
       {summary.isError && (
-        <p className="error">{getErrorMessage(summary.error)}</p>
+        <Alert variant="danger">{getErrorMessage(summary.error)}</Alert>
       )}
 
-      <div className="stats">
-        <StatTile
-          label="Income"
-          tone="income"
-          icon={<ArrowDownIcon size={16} />}
-          value={s?.totalIncome}
-        />
-        <StatTile
-          label="Expense"
-          tone="expense"
-          icon={<ArrowUpIcon size={16} />}
-          value={s?.totalExpense}
-        />
-        <StatTile
-          label="Balance"
-          tone={s && s.balance < 0 ? "expense" : "primary"}
-          icon={<WalletIcon size={16} />}
-          value={s?.balance}
-        />
-      </div>
+      <Row className="g-2 g-sm-3">
+        <Col xs={4}>
+          <StatTile
+            label="Income"
+            tone="income"
+            icon={<ArrowDownIcon size={16} />}
+            value={s?.totalIncome}
+          />
+        </Col>
+        <Col xs={4}>
+          <StatTile
+            label="Expense"
+            tone="expense"
+            icon={<ArrowUpIcon size={16} />}
+            value={s?.totalExpense}
+          />
+        </Col>
+        <Col xs={4}>
+          <StatTile
+            label="Balance"
+            tone={s && s.balance < 0 ? "expense" : "primary"}
+            icon={<WalletIcon size={16} />}
+            value={s?.balance}
+          />
+        </Col>
+      </Row>
 
       {s && s.balance < 0 && (
-        <div className="alert">
+        <Alert variant="warning">
           <AlertIcon size={18} />
           <span>
             You've spent <strong>{formatINR(-s.balance)}</strong> more than
             you earned this month.
           </span>
-        </div>
+        </Alert>
       )}
 
-      <div className="grid-2">
-        <section className="card">
-          <div className="section-header">
-            <h2>Spending by category</h2>
-            <Link to="/reports" className="link-sm">
-              Reports
-            </Link>
-          </div>
-          {summary.isPending && <div className="skeleton" />}
-          {s && s.expenseByCategory.length === 0 && (
-            <p className="empty">No expenses this month.</p>
-          )}
-          {s && s.expenseByCategory.length > 0 && (
-            <CategoryBars
-              items={s.expenseByCategory}
-              total={s.totalExpense}
-            />
-          )}
-        </section>
+      <Row xs={1} lg={2} className="g-3 align-items-start">
+        <Col>
+          <Card body>
+            <div className="section-header">
+              <h2>Spending by category</h2>
+              <Link to="/reports" className="link-sm">
+                Reports
+              </Link>
+            </div>
+            {summary.isPending && <div className="skeleton" />}
+            {s && s.expenseByCategory.length === 0 && (
+              <p className="empty">No expenses this month.</p>
+            )}
+            {s && s.expenseByCategory.length > 0 && (
+              <CategoryBars
+                items={s.expenseByCategory}
+                total={s.totalExpense}
+              />
+            )}
+          </Card>
+        </Col>
 
-        <section className="card">
-          <div className="section-header">
-            <h2>Recent</h2>
-            <Link to="/transactions" className="link-sm">
-              See all
-            </Link>
-          </div>
-          {recent.isPending && <div className="skeleton" />}
-          {recent.data && recent.data.data.length > 0 && (
-            <ul className="tx-list">
-              {recent.data.data.map((tx) => (
-                <TransactionItem key={tx.id} tx={tx} />
-              ))}
-            </ul>
-          )}
-          {recent.data && recent.data.data.length === 0 && (
-            <p className="empty">
-              No transactions this month.{" "}
-              <Link to="/transactions/new">Add one</Link>
-            </p>
-          )}
-        </section>
-      </div>
+        <Col>
+          <Card body>
+            <div className="section-header">
+              <h2>Recent</h2>
+              <Link to="/transactions" className="link-sm">
+                See all
+              </Link>
+            </div>
+            {recent.isPending && <div className="skeleton" />}
+            {recent.data && recent.data.data.length > 0 && (
+              <ListGroup as="ul" variant="flush">
+                {recent.data.data.map((tx) => (
+                  <TransactionItem key={tx.id} tx={tx} />
+                ))}
+              </ListGroup>
+            )}
+            {recent.data && recent.data.data.length === 0 && (
+              <p className="empty">
+                No transactions this month.{" "}
+                <Link to="/transactions/new">Add one</Link>
+              </p>
+            )}
+          </Card>
+        </Col>
+      </Row>
     </div>
   );
 }
@@ -159,14 +174,16 @@ function StatTile({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="stat">
-      <span className={`stat-icon ${tone}`}>{icon}</span>
-      <div>
-        <span className="stat-label">{label}</span>
-        <strong className="stat-value">
-          {value === undefined ? "—" : formatINR(value)}
-        </strong>
-      </div>
-    </div>
+    <Card className="stat h-100">
+      <Card.Body>
+        <span className={`stat-icon ${tone}`}>{icon}</span>
+        <div>
+          <span className="stat-label">{label}</span>
+          <strong className="stat-value">
+            {value === undefined ? "—" : formatINR(value)}
+          </strong>
+        </div>
+      </Card.Body>
+    </Card>
   );
 }

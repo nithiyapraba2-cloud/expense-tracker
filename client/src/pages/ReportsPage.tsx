@@ -1,5 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Alert from "react-bootstrap/Alert";
+import Card from "react-bootstrap/Card";
+import Col from "react-bootstrap/Col";
+import Row from "react-bootstrap/Row";
+import ToggleButton from "react-bootstrap/ToggleButton";
+import ToggleButtonGroup from "react-bootstrap/ToggleButtonGroup";
 import {
   Bar,
   CartesianGrid,
@@ -80,44 +86,58 @@ export default function ReportsPage() {
       </div>
 
       {summary.isError && (
-        <p className="error">{getErrorMessage(summary.error)}</p>
+        <Alert variant="danger">{getErrorMessage(summary.error)}</Alert>
       )}
 
-      <div className="stats">
-        <div className="stat stacked">
-          <span className="stat-label">Top spending</span>
-          <strong className="stat-value">
-            {top ? `${top.icon ?? ""} ${top.name}` : "—"}
-          </strong>
-          <span className="stat-sub">
-            {top ? formatINR(top.total) : "No expenses yet"}
-          </span>
-        </div>
-        <div className="stat stacked">
-          <span className="stat-label">Savings rate</span>
-          <strong className={`stat-value ${overspent ? "text-expense" : ""}`}>
-            {savingsRate === null ? "—" : `${savingsRate.toFixed(0)}%`}
-          </strong>
-          <span className="stat-sub">
-            {!s
-              ? "—"
-              : overspent
-                ? `${formatINR(-s.balance)} overspent`
-                : `${formatINR(s.balance)} saved`}
-          </span>
-        </div>
-        <div className="stat stacked">
-          <span className="stat-label">Spent this month</span>
-          <strong className="stat-value">
-            {s ? formatINR(s.totalExpense) : "—"}
-          </strong>
-          <span className="stat-sub">
-            {s ? `of ${formatINR(s.totalIncome)} income` : "—"}
-          </span>
-        </div>
-      </div>
+      <Row className="g-2 g-sm-3">
+        <Col xs={4}>
+          <Card className="stat stacked h-100">
+            <Card.Body>
+              <span className="stat-label">Top spending</span>
+              <strong className="stat-value">
+                {top ? `${top.icon ?? ""} ${top.name}` : "—"}
+              </strong>
+              <span className="stat-sub">
+                {top ? formatINR(top.total) : "No expenses yet"}
+              </span>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xs={4}>
+          <Card className="stat stacked h-100">
+            <Card.Body>
+              <span className="stat-label">Savings rate</span>
+              <strong
+                className={`stat-value ${overspent ? "text-expense" : ""}`}
+              >
+                {savingsRate === null ? "—" : `${savingsRate.toFixed(0)}%`}
+              </strong>
+              <span className="stat-sub">
+                {!s
+                  ? "—"
+                  : overspent
+                    ? `${formatINR(-s.balance)} overspent`
+                    : `${formatINR(s.balance)} saved`}
+              </span>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xs={4}>
+          <Card className="stat stacked h-100">
+            <Card.Body>
+              <span className="stat-label">Spent this month</span>
+              <strong className="stat-value">
+                {s ? formatINR(s.totalExpense) : "—"}
+              </strong>
+              <span className="stat-sub">
+                {s ? `of ${formatINR(s.totalIncome)} income` : "—"}
+              </span>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
-      <section className="card">
+      <Card body>
         <div className="section-header">
           <h2>Spending by category</h2>
           <span className="muted small">{formatMonth(month)}</span>
@@ -129,27 +149,34 @@ export default function ReportsPage() {
         {s && s.expenseByCategory.length > 0 && (
           <CategoryBars items={s.expenseByCategory} total={s.totalExpense} />
         )}
-      </section>
+      </Card>
 
-      <section className="card">
+      <Card body>
         <div className="section-header">
           <h2>Income vs expense</h2>
-          <div className="segmented small" role="group" aria-label="Range">
+          <ToggleButtonGroup
+            type="radio"
+            name="range"
+            size="sm"
+            value={months}
+            onChange={setMonths}
+            aria-label="Range"
+          >
             {RANGES.map((n) => (
-              <button
+              <ToggleButton
                 key={n}
-                type="button"
-                className={months === n ? "active" : ""}
-                onClick={() => setMonths(n)}
+                id={`range-${n}`}
+                value={n}
+                variant="outline-secondary"
               >
                 {n}M
-              </button>
+              </ToggleButton>
             ))}
-          </div>
+          </ToggleButtonGroup>
         </div>
         {trend.isPending && <div className="skeleton tall" />}
         {trend.isError && (
-          <p className="error">{getErrorMessage(trend.error)}</p>
+          <Alert variant="danger">{getErrorMessage(trend.error)}</Alert>
         )}
         {trend.data && (
           <div className="chart">
@@ -214,7 +241,7 @@ export default function ReportsPage() {
             </ResponsiveContainer>
           </div>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

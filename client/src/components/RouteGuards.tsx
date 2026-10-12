@@ -1,9 +1,10 @@
 import { Navigate, Outlet } from "react-router-dom";
+import Spinner from "react-bootstrap/Spinner";
 import { useAuth } from "../context/auth-context";
 
 const Loading = () => (
   <div className="center">
-    <span className="spinner" aria-label="Loading" />
+    <Spinner animation="border" role="status" aria-label="Loading" />
   </div>
 );
 

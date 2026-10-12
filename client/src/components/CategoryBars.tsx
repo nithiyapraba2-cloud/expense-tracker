@@ -1,3 +1,4 @@
+import ProgressBar from "react-bootstrap/ProgressBar";
 import type { CategoryTotal } from "../types/transaction";
 import { formatINR } from "../utils/format";
 
@@ -23,16 +24,10 @@ export default function CategoryBars({ items, total }: Props) {
                   <small>{percent.toFixed(0)}%</small>
                 </span>
               </div>
-              <div
-                className="bar-track"
-                role="meter"
+              <ProgressBar
+                now={percent}
                 aria-label={`${c.name} share of spending`}
-                aria-valuenow={Math.round(percent)}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                <div className="bar-fill" style={{ width: `${percent}%` }} />
-              </div>
+              />
             </div>
           </li>
         );
